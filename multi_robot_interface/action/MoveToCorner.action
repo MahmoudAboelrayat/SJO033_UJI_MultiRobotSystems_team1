@@ -1,5 +1,5 @@
 # Goal definition
-geometry_msgs/PoseStamped target_pose
+nav_msgs/Odometry target_pose
 
 ---
 # Result definition
