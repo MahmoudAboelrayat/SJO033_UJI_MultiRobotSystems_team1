@@ -51,8 +51,8 @@ public:
     RCLCPP_INFO(this->get_logger(), "Received move signal");
     for (int i = 0; i < 4; ++i) {
       auto goal_msg = Move::Goal();
-      int next_corner_cw = (i + 1) % 4;
-      int next_corner_ccw = (i + 3) % 4;
+      int next_corner_ccw = (i + 1) % 4;
+      int next_corner_cw = (i + 3) % 4;
       if (!latest_odoms_[next_corner_cw]) {
           RCLCPP_WARN(this->get_logger(), "No odometry yet for robot %d", next_corner_cw + 1);
           continue;
