@@ -80,7 +80,7 @@ def generate_launch_description():
         root = tree.getroot()
         robot_name = f'{TURTLEBOT3_MODEL}_{i}'
         namespace = f'robot{i}'
-
+        yaw_angle = PythonExpression(['(', yaw, ' + (1.57 * ', str(i - 2), '))'])
         for odom_frame_tag in root.iter('odometry_frame'):
             odom_frame_tag.text = f'{namespace}/odom'
         for base_frame_tag in root.iter('robot_base_frame'):
@@ -115,7 +115,7 @@ def generate_launch_description():
             '-x', x,
             '-y', y,
             '-z', '0.01',
-            '-Y', yaw,
+            '-Y', yaw_angle,
             '-robot_namespace', namespace
         ],
         output='screen',
