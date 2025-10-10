@@ -81,7 +81,7 @@ public:
       send_goal_options.result_callback =
         [i](const GoalHandleMove::WrappedResult & result) {
           RCLCPP_INFO(rclcpp::get_logger("rclcpp"),
-                      "Robot %d finished with status %d", i + 1, static_cast<int>(result.code));
+                      "Robot %d finished with status", i + 1);
         };
 
       clients_[i]->async_send_goal(goal_msg, send_goal_options);

@@ -39,7 +39,8 @@ public:
       "odom", 10,
       std::bind(&MoveServer::current_odom_callback, this, std::placeholders::_1));
 
-    RCLCPP_INFO(this->get_logger(), "MoveToCorner action server started and waiting for goals...");
+    RCLCPP_INFO(this->get_logger(), "MoveToCorner action server started with kp= %f and waiting for goals...",
+      this->get_parameter("kp").as_double());
   }
 
 private:

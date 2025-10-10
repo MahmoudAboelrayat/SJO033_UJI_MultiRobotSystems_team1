@@ -10,6 +10,7 @@ def generate_launch_description():
                 executable="square_controller_server",
                 name=f"square_controller_server_{i}",
                 namespace=f"robot{i}",
+                parameters=[{"kp": 0.8}],
                 output="screen",
             )
         )
