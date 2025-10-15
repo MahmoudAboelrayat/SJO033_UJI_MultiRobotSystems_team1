@@ -20,27 +20,41 @@ namespace move_to_corner
 class MoveClient : public rclcpp::Node
 {
 public:
+
   using Move = multi_robot_interface::action::MoveToCorner;
   using GoalHandleMove = rclcpp_action::ClientGoalHandle<Move>;
 
   explicit MoveClient(const rclcpp::NodeOptions & options = rclcpp::NodeOptions())
   : Node("move_to_corner_client", options)
   {
-    latest_odoms_.resize(4);
-    for (int i = 0; i < 4; ++i) {
-      odom_subs_.push_back(this->create_subscription<nav_msgs::msg::Odometry>(
-        "/robot" + std::to_string(i + 1) + "/odom", 10,
-        [this, i](nav_msgs::msg::Odometry::SharedPtr msg) {
-          latest_odoms_[i] = msg;
-        }));
+    this->declare_parameter<bool>("simulation", true);
+    this->declare_parameter<std::string>("robot_namespaces", "robot1,robot2,robot3,robot4");
+    std::string ns_string = this->get_parameter("robot_namespaces").as_string();
+    std::stringstream ss(ns_string);
+    std::string ns;
+    while (std::getline(ss, ns, ',')) {
+        robot_namespaces_.push_back(ns);
     }
 
-    for (int i = 1; i <= 4; ++i) {
+    bool simulation = this->get_parameter("simulation").as_bool();
+    auto odom_frame = simulation ? "/odom" : "/odom_map_frame";
+    latest_odoms_.resize(4);
+    for (size_t i = 0; i < robot_namespaces_.size(); ++i) {
+     
+      odom_subs_.push_back(
+          this->create_subscription<nav_msgs::msg::Odometry>(
+              "/" + robot_namespaces_[i] + odom_frame, 10,
+              [this, i](nav_msgs::msg::Odometry::SharedPtr msg) {
+                  latest_odoms_[i] = msg;
+              }
+          )
+      );
+
       auto client = rclcpp_action::create_client<Move>(
-        this, "/robot" + std::to_string(i) + "/move_to_corner");
+          this, "/" + robot_namespaces_[i] + "/move_to_corner");
       clients_.push_back(client);
     }
-
+    RCLCPP_INFO(this->get_logger(), "Waiting for signal from /move_signal topic...");
     signal_sub_ = this->create_subscription<std_msgs::msg::String>(
       "/move_signal", 10,
       std::bind(&MoveClient::send_goal, this, std::placeholders::_1));
@@ -54,9 +68,11 @@ public:
       int next_corner_ccw = (i + 1) % 4;
       int next_corner_cw = (i + 3) % 4;
       if (!latest_odoms_[next_corner_cw]) {
-          RCLCPP_WARN(this->get_logger(), "No odometry yet for robot %d", next_corner_cw + 1);
-          continue;
-      }
+        std::string topic_name = "/" + robot_namespaces_[next_corner_cw] + 
+                                (this->get_parameter("simulation").as_bool() ? "/odom" : "/odom_map_frame");
+        RCLCPP_WARN(this->get_logger(), "No odometry yet for %s", topic_name.c_str());
+        continue;
+    }
       if (msg->data == "CW") {
         RCLCPP_INFO(this->get_logger(), "Robot %d moving to corner %d (CW)", i + 1, next_corner_cw + 1);
         goal_msg.target_pose = *latest_odoms_[next_corner_cw];
@@ -90,6 +106,7 @@ public:
 
 
 private:
+  std::vector<std::string> robot_namespaces_;
   std::vector<rclcpp_action::Client<Move>::SharedPtr> clients_;
   std::vector<rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr> odom_subs_;
   std::vector<nav_msgs::msg::Odometry::SharedPtr> latest_odoms_;

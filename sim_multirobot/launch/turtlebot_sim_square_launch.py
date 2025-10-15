@@ -65,8 +65,9 @@ def generate_launch_description():
     y_center = LaunchConfiguration('y_center', default='0.0')
     side_length = LaunchConfiguration('length', default='1.0')
     yaw = LaunchConfiguration('yaw', default='0.0')
+    
 
-    offset =PythonExpression(['(', side_length, ' / 2.0)'])
+    offset = PythonExpression(['(', side_length, ' / 2.0)'])
     poses = [
         (PythonExpression(['(', x_center, ' - ', offset, ')']), PythonExpression(['(', y_center, ' - ', offset, ')'])),  # Robot 1
         (PythonExpression(['(', x_center, ' + ', offset, ')']), PythonExpression(['(', y_center, ' - ', offset, ')'])),  # Robot 2

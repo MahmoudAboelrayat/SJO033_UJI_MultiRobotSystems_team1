@@ -15,6 +15,7 @@ find_package(multi_robot_interface REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 
+# Existing executables
 add_executable(square_controller_server src/square_controller_server.cpp)
 ament_target_dependencies(square_controller_server
   rclcpp
@@ -32,14 +33,24 @@ ament_target_dependencies(square_controller_client
   nav_msgs
   std_msgs
   geometry_msgs
-  tf2_ros
-  tf2_geometry_msgs
   multi_robot_interface
 )
 
+# New transform_odom executable
+add_executable(transform_odom src/transform_odom.cpp)
+ament_target_dependencies(transform_odom
+  rclcpp
+  nav_msgs
+  geometry_msgs
+  tf2_ros
+  tf2_geometry_msgs
+)
+
+# Install targets
 install(TARGETS
   square_controller_server
   square_controller_client
+  transform_odom
   DESTINATION lib/${PROJECT_NAME}
 )
 

@@ -21,10 +21,15 @@ public:
   : Node("move_to_corner_server", options)
   {
     this->declare_parameter<double>("kp", 0.5);
+    this->declare_parameter<double>("ki", 0.0);
     this->declare_parameter<double>("distance_threshold", 0.05);
     this->declare_parameter<double>("angle_th", 0.01);
     this->declare_parameter<double>("max_linear_speed", 0.2);
     this->declare_parameter<double>("max_angular_speed", 0.5);
+    this->declare_parameter<bool>("simulation", true);
+
+    bool simulation = this->get_parameter("simulation").as_bool();
+    auto odom_frame = simulation ? "odom" : "odom_map_frame";
 
     action_server_ = rclcpp_action::create_server<Move>(
       this,
@@ -36,11 +41,11 @@ public:
     vel_pub = this->create_publisher<geometry_msgs::msg::Twist>("cmd_vel", 10);
 
     odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
-      "odom", 10,
+      odom_frame, 10,
       std::bind(&MoveServer::current_odom_callback, this, std::placeholders::_1));
 
-    RCLCPP_INFO(this->get_logger(), "MoveToCorner action server started with kp= %f and waiting for goals...",
-      this->get_parameter("kp").as_double());
+    RCLCPP_INFO(this->get_logger(), "MoveToCorner action server started with kp= %f, ki= %f and waiting for goals...",
+      this->get_parameter("kp").as_double(), this->get_parameter("ki").as_double()  );
   }
 
 private:
@@ -95,14 +100,24 @@ private:
     auto feedback = std::make_shared<Move::Feedback>();
     auto result = std::make_shared<Move::Result>();
 
-    float target_x = goal->target_pose.pose.pose.position.x;
-    float target_y = goal->target_pose.pose.pose.position.y;
-    
+    double target_x = goal->target_pose.pose.pose.position.x;
+    double target_y = goal->target_pose.pose.pose.position.y;
+
+    double qx = goal->target_pose.pose.pose.orientation.x;
+    double qy = goal->target_pose.pose.pose.orientation.y;
+    double qz = goal->target_pose.pose.pose.orientation.z;
+    double qw = goal->target_pose.pose.pose.orientation.w;
+    double target_yaw = std::atan2(2.0*(qw*qz + qx*qy),
+                                   1.0 - 2.0*(qy*qy + qz*qz));
+
     double kp = this->get_parameter("kp").as_double();
+    double ki = this->get_parameter("ki").as_double();
     double th = this->get_parameter("distance_threshold").as_double();
     double yaw_th = this->get_parameter("angle_th").as_double();
     double max_linear_speed = this->get_parameter("max_linear_speed").as_double();
     double max_angular_speed = this->get_parameter("max_angular_speed").as_double();
+    double theta_ei = 0.0;
+    double distance_ei = 0.0;
 
     rclcpp::Rate loop_rate(10.0);
 
@@ -111,24 +126,26 @@ private:
       double dy = target_y - current_y_;
       double distance = std::sqrt(dx*dx + dy*dy);
       if (distance < th) break;
-
       double angle_to_target = std::atan2(dy, dx);
       double angle_diff = angle_to_target - current_yaw_;
       while (angle_diff > M_PI) angle_diff -= 2 * M_PI;
       while (angle_diff < -M_PI) angle_diff += 2 * M_PI;
 
-      float u = 0.0;
-      float yaw_rate = 0.0;
+      double u = 0.0;
+      double yaw_rate = 0.0;
 
       if (std::fabs(angle_diff) > yaw_th) {
         u = 0.0;
-        yaw_rate = kp * angle_diff;
+        theta_ei += angle_diff * 0.1;
+
+        yaw_rate = kp * angle_diff + ki * theta_ei;
         if (yaw_rate > max_angular_speed) yaw_rate = max_angular_speed;
         if (yaw_rate < -max_angular_speed) yaw_rate = -max_angular_speed;
+        RCLCPP_WARN(this->get_logger(), "Rotating to face target: angle_diff= %.2f, yaw_rate= %.2f", angle_diff, yaw_rate); 
       } else {
         u = kp * distance;
         if (u > max_linear_speed) u = max_linear_speed;
-        yaw_rate = 0.0;
+        yaw_rate = 0.5 * kp * angle_diff;
       }
 
       velocity_msg.linear.x = u;
@@ -141,10 +158,34 @@ private:
       loop_rate.sleep();
     }
 
+    theta_ei = 0.0;
+    distance_ei = 0.0;
     velocity_msg.linear.x = 0.0;
     velocity_msg.angular.z = 0.0;
     vel_pub->publish(velocity_msg);
 
+    RCLCPP_INFO(this->get_logger(), "Reached target position, aligning orientation...");
+
+    while (rclcpp::ok()) {
+      double yaw_diff = target_yaw - current_yaw_;
+      while (yaw_diff > M_PI) yaw_diff -= 2.0 * M_PI;
+      while (yaw_diff < -M_PI) yaw_diff += 2.0 * M_PI;
+      if (std::fabs(yaw_diff) < yaw_th) break;
+
+      velocity_msg.linear.x = 0.0;
+      velocity_msg.angular.z = kp * yaw_diff;
+      if (velocity_msg.angular.z > max_angular_speed) velocity_msg.angular.z = max_angular_speed;
+      if (velocity_msg.angular.z < -max_angular_speed) velocity_msg.angular.z = -max_angular_speed;
+
+      vel_pub->publish(velocity_msg);
+      loop_rate.sleep();
+    }
+
+    velocity_msg.linear.x = 0.0;
+    velocity_msg.angular.z = 0.0;
+    vel_pub->publish(velocity_msg);
+
+    RCLCPP_INFO(this->get_logger(), "Orientation aligned!");
     result->success = true;
     goal_handle->succeed(result);
     RCLCPP_INFO(this->get_logger(), "Reached target corner!");
