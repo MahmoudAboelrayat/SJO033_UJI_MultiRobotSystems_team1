@@ -45,6 +45,20 @@ def generate_launch_description():
         output="screen",
     )
 
+
+        #Odom transforms for robot frames
+    transform = Node(
+        package="multirobot_controller",
+        executable="transform_odom",
+        name="transform_odom",
+        parameters=[{"robot_namespaces": [ns1, TextSubstitution(text=','), 
+                                     ns2, TextSubstitution(text=','), 
+                                     ns3, TextSubstitution(text=','), 
+                                     ns4]}],
+        output="screen",
+    )
+
+
     offset = PythonExpression(['(', side_length, ' / 2.0)'])
     poses = [
         (PythonExpression(["-(", offset, ")"]), PythonExpression(["-(", offset, ")"]), "-1.57"),   # Robot 1
@@ -52,6 +66,7 @@ def generate_launch_description():
         (offset, offset, "1.57"),                                                                # Robot 3
         (PythonExpression(["-(", offset, ")"]), offset, "3.1415"),                                # Robot 4
     ]
+
 
     # TF nodes
     tfs = []
@@ -67,4 +82,4 @@ def generate_launch_description():
             )
         )
 
-    return LaunchDescription(servers + [client] + tfs)
+    return LaunchDescription(servers + [client] + tfs+ [transform])
