@@ -36,6 +36,12 @@ ament_target_dependencies(square_controller_client
   multi_robot_interface
 )
 
+add_executable(signal_node src/signal_node.cpp)
+ament_target_dependencies(signal_node
+  rclcpp
+  std_msgs
+)
+
 # New transform_odom executable
 add_executable(transform_odom src/transform_odom.cpp)
 ament_target_dependencies(transform_odom
@@ -46,11 +52,11 @@ ament_target_dependencies(transform_odom
   tf2_geometry_msgs
 )
 
-# Install targets
 install(TARGETS
   square_controller_server
   square_controller_client
   transform_odom
+  signal_node
   DESTINATION lib/${PROJECT_NAME}
 )
 

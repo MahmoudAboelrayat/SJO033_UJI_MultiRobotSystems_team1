@@ -21,48 +21,20 @@ public:
         tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
         tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
 
-        // Get all topics
-        auto topics_and_types = this->get_topic_names_and_types();
+        this->declare_parameter<double>("side_length", 1.0);
+        this->declare_parameter<bool>("lagging", false);
+        this->side_length = this->get_parameter("side_length").as_double();
 
-        // Extract unique namespaces
-        std::set<std::string> robot_namespaces_set;
-        std::regex tb_pattern("^/tb_\\d+/");  // Matches "/tb_###/"
-
-        for (const auto &topic : topics_and_types)
-        {
-            const std::string &topic_name = topic.first;
-            std::smatch match;
-
-            if (std::regex_search(topic_name, match, tb_pattern))
-            {
-                std::string ns = match.str();
-                ns.pop_back(); 
-                robot_namespaces_set.insert(ns);
-            }
+        this->declare_parameter<std::string>("robot_namespaces", "robot1,robot2,robot3,robot4");
+        std::string ns_string = this->get_parameter("robot_namespaces").as_string();
+        std::stringstream ss(ns_string);
+        std::string ns;
+        while (std::getline(ss, ns, ',')) {
+            robot_namespaces_.push_back(ns);
         }
-
-        robot_namespaces_ = std::vector<std::string>(
-            robot_namespaces_set.begin(), robot_namespaces_set.end()
-        );
-
-        // Sort by robot id number so that the smallest number comes first
-        std::sort(robot_namespaces_.begin(), robot_namespaces_.end(),
-            [](const std::string &a, const std::string &b){
-                std::regex tb_pattern("^/tb_(\\d+)");
-                std::smatch match_a, match_b;
-                int num_a = 0, num_b = 0;
-
-                if (std::regex_search(a, match_a, tb_pattern))
-                    num_a = std::stoi(match_a[1].str());
-                if (std::regex_search(b, match_b, tb_pattern))
-                    num_b = std::stoi(match_b[1].str());
-
-                return num_a < num_b;
-            }
-        );
-
+        
         // Check we found all 4 robots
-        if (robot_namespaces_.size() < 1) // Change back to 4 for actual use
+        if (robot_namespaces_.size() < 4) // Change back to 4 for actual use
         {
             RCLCPP_ERROR(this->get_logger(),
                          "Could not find all four robot namespaces. Found %zu. Make sure all robots are running.",
@@ -78,7 +50,6 @@ public:
         for (size_t i = 0; i < robot_namespaces_.size(); ++i)
         {
             std::string ns = robot_namespaces_[i];
-
             odom_subs_.push_back(
                 this->create_subscription<nav_msgs::msg::Odometry>(
                     ns + "/odom", 10,
@@ -103,6 +74,7 @@ private:
     std::vector<rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr> transformed_pub_;
     std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
     std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
+    double side_length;
 
     void odom_callback(nav_msgs::msg::Odometry::SharedPtr msg, size_t index)
 {
@@ -118,7 +90,7 @@ private:
         pose_in.header = msg->header;
         pose_in.pose = msg->pose.pose;
 
-        pose_out = tf_buffer_->transform(pose_in, "map", tf2::durationFromSec(0.1));
+        pose_out = tf_buffer_->transform(pose_in, "map", tf2::durationFromSec(1.0));
 
         // Copy transformed pose to odom_out
         odom_out.pose.pose = pose_out.pose;
@@ -131,8 +103,42 @@ private:
     catch (tf2::TransformException &ex)
     {
         RCLCPP_WARN(this->get_logger(),
-                    "Could not transform %s: %s",
+                    "Could not transform %s: %s. Using static fallback.",
                     robot_namespaces_[index].c_str(), ex.what());
+
+        float x = this ->side_length * ((index+1 < 4 && index+1 > 1) ? 0.5 : -0.5);
+        float y = this ->side_length * ((index+1 > 2) ? 0.5 : -0.5);
+        float yaw = (index+1 -1) * (M_PI / 2.0) - (M_PI / 2.0); // -90, 0, 90, 180 degrees in radians 
+        tf2::Transform static_tf;
+        tf2::Vector3 translation(x, y, 0.0);      // x,y,z
+        tf2::Quaternion rotation;
+        rotation.setRPY(0.0, 0.0, yaw);              // roll, pitch, yaw
+        static_tf.setOrigin(translation);
+        static_tf.setRotation(rotation);
+
+        // Convert odom pose to tf2
+        tf2::Transform odom_pose_tf;
+        tf2::fromMsg(msg->pose.pose, odom_pose_tf);
+
+        // Apply static transform
+        tf2::Transform transformed_pose = static_tf * odom_pose_tf;
+
+        // Convert back to ROS message
+        odom_out.pose.pose.position.x = transformed_pose.getOrigin().x();
+        odom_out.pose.pose.position.y = transformed_pose.getOrigin().y();
+        odom_out.pose.pose.position.z = transformed_pose.getOrigin().z();
+
+        tf2::Quaternion q = transformed_pose.getRotation();
+        odom_out.pose.pose.orientation.x = q.x();
+        odom_out.pose.pose.orientation.y = q.y();
+        odom_out.pose.pose.orientation.z = q.z();
+        odom_out.pose.pose.orientation.w = q.w();
+
+
+        // Keep original twist
+        odom_out.twist = msg->twist;
+
+        transformed_pub_[index]->publish(odom_out);
     }
 }
 
