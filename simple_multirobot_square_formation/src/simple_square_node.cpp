@@ -160,8 +160,7 @@ private:
       RCLCPP_WARN(this->get_logger(),
                   "%s rotating to face target: angle_diff=%.2f, yaw_rate=%.2f",
                   robot_namespaces_[i].c_str(), angle_diff, yaw_rate);
-
-      this->states_[i] = "Rotating";
+      if (this->states_[i] == "init") this->states_[i] = "Rotating";
     }else if(this->states_[i] == "Rotating") {
       this->states_[i] = "Waiting";
       RCLCPP_INFO(this->get_logger(),

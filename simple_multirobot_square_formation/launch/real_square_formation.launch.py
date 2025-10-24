@@ -11,6 +11,8 @@ def generate_launch_description():
     th_distance = LaunchConfiguration('th_distance', default='0.05')
     side_length = LaunchConfiguration('length', default='1.0')
     init_angle = LaunchConfiguration('init_angle', default='0.0')
+    max_speed = LaunchConfiguration('max_speed', default='0.2')
+    max_yaw_rate = LaunchConfiguration('max_yaw_rate', default='0.2')
     # Separate LaunchConfigurations for each robot namespace
     ns1 = LaunchConfiguration('ns1', default='tb_108')
     ns2 = LaunchConfiguration('ns2', default='tb_109')
@@ -31,6 +33,8 @@ def generate_launch_description():
                                      "ki": ki,
                                      "distance_threshold": th_distance,
                                        "angle_th": th_angle,
+                                       "max_linear_speed" : max_speed,
+                                       "max_angular_speed": max_yaw_rate,
                                        "simulation": False}],
         output="screen",
     )
