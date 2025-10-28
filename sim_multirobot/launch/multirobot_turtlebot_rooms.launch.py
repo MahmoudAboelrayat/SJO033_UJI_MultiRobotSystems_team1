@@ -20,7 +20,7 @@ def generate_launch_description():
     turtlebot_pkg = get_package_share_directory('turtlebot3_gazebo')
     launch_file_dir = os.path.join(turtlebot_pkg, 'launch')
     pkg_gazebo_ros = get_package_share_directory('gazebo_ros')
-
+    pkg_share = FindPackageShare('sim_multirobot').find('sim_multirobot')
     use_sim_time = LaunchConfiguration('use_sim_time', default='true')
     
     urdf_path = os.path.join(
@@ -31,10 +31,11 @@ def generate_launch_description():
     )
 
     world = os.path.join(
-        turtlebot_pkg,
+        pkg_share,
         'worlds',
-        'empty_world.world'
+        'multirobot_world'
     )
+
 
     gzserver_cmd = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -61,18 +62,13 @@ def generate_launch_description():
     ld.add_action(gzclient_cmd)
 
     # Define square formation positions
-    x_center = LaunchConfiguration('x_center', default='0.0')
-    y_center = LaunchConfiguration('y_center', default='0.0')
-    side_length = LaunchConfiguration('length', default='1.0')
-    yaw = LaunchConfiguration('yaw', default='0.0')
-    
+   
 
-    offset = PythonExpression(['(', side_length, ' / 2.0)'])
     poses = [
-        (PythonExpression(['(', x_center, ' - ', offset, ')']), PythonExpression(['(', y_center, ' - ', offset, ')'])),  # Robot 1
-        (PythonExpression(['(', x_center, ' + ', offset, ')']), PythonExpression(['(', y_center, ' - ', offset, ')'])),  # Robot 2
-        (PythonExpression(['(', x_center, ' + ', offset, ')']), PythonExpression(['(', y_center, ' + ', offset, ')'])),  # Robot 3
-        (PythonExpression(['(', x_center, ' - ', offset, ')']), PythonExpression(['(', y_center, ' + ', offset, ')']))   # Robot 4
+        ('0.35','-0.3'),  # Robot 1
+        ('-0.7','-0.5'),  # Robot 2
+        ('-0.4','0.7'),  # Robot 3
+        ('0.75','0.7')   # Robot 4
     ]   
 
     # Loop to spawn each robot
@@ -81,7 +77,6 @@ def generate_launch_description():
         root = tree.getroot()
         robot_name = f'{TURTLEBOT3_MODEL}_{i}'
         namespace = f'robot{i}'
-        yaw_angle = PythonExpression(['(', yaw, ' + (1.57 * ', str(i - 2), '))'])
         for odom_frame_tag in root.iter('odometry_frame'):
             odom_frame_tag.text = f'{namespace}/odom'
         for base_frame_tag in root.iter('robot_base_frame'):
