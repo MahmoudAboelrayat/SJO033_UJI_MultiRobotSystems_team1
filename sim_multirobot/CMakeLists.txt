@@ -11,7 +11,12 @@ find_package(turtlebot3_gazebo REQUIRED)
 find_package(gazebo_ros REQUIRED)
 
 install(
-  DIRECTORY launch rviz
+  DIRECTORY launch rviz 
+  DESTINATION share/${PROJECT_NAME}
+)
+
+install(
+  DIRECTORY worlds
   DESTINATION share/${PROJECT_NAME}
 )
 
