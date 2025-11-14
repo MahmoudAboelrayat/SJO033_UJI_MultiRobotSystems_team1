@@ -3,74 +3,57 @@ import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
-from launch.actions import IncludeLaunchDescription
-from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch_ros.actions import PushRosNamespace
 from launch_ros.actions import Node
-
-TURTLEBOT3_MODEL = os.environ['TURTLEBOT3_MODEL']
-ROS_DISTRO = os.environ.get('ROS_DISTRO')
-
+from launch.actions import IncludeLaunchDescription
 
 def generate_launch_description():
-    use_sim_time = LaunchConfiguration('use_sim_time', default='false')
-    map_dir = LaunchConfiguration(
-        'map',
-        default=os.path.join(
-            get_package_share_directory('multi_nav2'),
-            'map',
-            'tb_rooms2.yaml'))
+    namespace = LaunchConfiguration('namespace')
+    use_namespace = LaunchConfiguration('use_namespace')
+    use_sim_time = LaunchConfiguration('use_sim_time')
+    map_file = LaunchConfiguration('map')
+    params_file = LaunchConfiguration('params_file')
+    autostart = LaunchConfiguration('autostart')
 
-    param_file_name = 'robot1.yaml'
-    param_dir = LaunchConfiguration(
-            'params_file',
-            default=os.path.join(
-                get_package_share_directory('multi_nav2'),
-                'param',
-                param_file_name))
+    multi_nav2_share = get_package_share_directory('multi_nav2')
+    nav2_bringup_share = get_package_share_directory('nav2_bringup')
+    nav_launch_dir = os.path.join(nav2_bringup_share, 'launch')
+    default_map = os.path.join(multi_nav2_share, 'map', 'my_map4.yaml')
+    default_params = os.path.join(multi_nav2_share, 'param', 'nav2_params.yaml')
 
-
-    nav2_launch_file_dir = os.path.join(get_package_share_directory('nav2_bringup'), 'launch')
-
-    rviz_config_dir = os.path.join(
-        get_package_share_directory('turtlebot3_navigation2'),
-        'rviz',
-        'tb3_navigation2.rviz')
+    rviz_config_file =os.path.join(
+            nav2_bringup_share, 'rviz', 'nav2_namespaced_view.rviz')
 
     return LaunchDescription([
-        DeclareLaunchArgument(
-            'map',
-            default_value=map_dir,
-            description='Full path to map file to load'),
+        DeclareLaunchArgument('namespace', default_value='robot1', description='Namespace for the robot'),
+        DeclareLaunchArgument('use_namespace', default_value='True', description='use the namespace'),
+        DeclareLaunchArgument('use_sim_time', default_value='True', description='Use simulation time'),
+        DeclareLaunchArgument('map', default_value=default_map, description='Full path to map yaml file'),
+        DeclareLaunchArgument('params_file', default_value=default_params, description='Full path to Nav2 parameter file'),
+        DeclareLaunchArgument('autostart', default_value='True', description='Automatically start Nav2 nodes'),
 
-        DeclareLaunchArgument(
-            'params_file',
-            default_value=param_dir,
-            description='Full path to param file to load'),
-
-        DeclareLaunchArgument(
-            'use_sim_time',
-            default_value='false',
-            description='Use simulation (Gazebo) clock if true'),
 
         IncludeLaunchDescription(
-            PythonLaunchDescriptionSource([nav2_launch_file_dir, '/bringup_launch.py']),
+            PythonLaunchDescriptionSource(
+                os.path.join(nav2_bringup_share, 'launch', 'bringup_launch.py')
+            ),
             launch_arguments={
-                'map': map_dir,
+                'namespace': namespace,
+                'use_namespace': use_namespace,
                 'use_sim_time': use_sim_time,
-                'params_file': param_dir,
-                'namespace': 'robot1',
-                'use_namespace': 'True'
+                'autostart': autostart,
+                'map': map_file,
+                'params_file': params_file
             }.items(),
         ),
-
-        
-
-        Node(
-            package='rviz2',
-            executable='rviz2',
-            name='rviz2',
-            arguments=['-d', rviz_config_dir],
-            parameters=[{'use_sim_time': use_sim_time}],
-            output='screen'),
+         IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(
+                os.path.join(nav_launch_dir, 'rviz_launch.py')),
+                launch_arguments={'use_sim_time': use_sim_time, 
+                                  'namespace': namespace,
+                                  'use_namespace': 'True',
+                                  'rviz_config': rviz_config_file, 'log_level': 'warn'}.items(),
+                                    ),
     ])
