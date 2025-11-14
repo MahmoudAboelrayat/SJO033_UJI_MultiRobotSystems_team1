@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>reactive_controller</name>
+  <version>0.0.0</version>
+  <description>Multi-robot localization, planning, and reactive control</description>
+
+  <maintainer email="mohamedmajdi0002@gmail.com">Mohamed</maintainer>
+  <license>Apache-2.0</license>
+
+  <!-- Core ROS2 Python dependencies -->
+  <depend>rclpy</depend>
+  <depend>std_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>nav_msgs</depend>
+
+  <!-- TF dependencies -->
+  <depend>tf2_ros</depend>
+  <depend>tf_transformations</depend>
+
+  <!-- Needed for get_package_share_directory() -->
+  <depend>ament_index_python</depend>
+
+  <!-- Packages used INSIDE your launch file -->
+  <exec_depend>slam_toolbox</exec_depend>
+  <exec_depend>nav2_bringup</exec_depend>
+  <exec_depend>rviz2</exec_depend>
+  <exec_depend>gazebo_ros</exec_depend>
+  <exec_depend>gazebo_ros_pkgs</exec_depend>
+
+  <!-- Your simulation world package -->
+  <exec_depend>sim_multirobot_nav</exec_depend>
+
+  <!-- Launch system dependencies -->
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+
+  <!-- Build system -->
+  <buildtool_depend>ament_python</buildtool_depend>
+
+  <test_depend>ament_copyright</test_depend>
+  <test_depend>ament_flake8</test_depend>
+  <test_depend>ament_pep257</test_depend>
+  <test_depend>python3-pytest</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+
+</package>
