@@ -64,12 +64,18 @@ def generate_launch_description():
     # Define square formation positions
    
 
-    poses = [
+    # poses = [
+    #     ('0.35','-0.3'),  # Robot 1
+    #     ('-0.7','-0.5'),  # Robot 2
+    #     ('-0.4','0.7'),  # Robot 3
+    #     ('0.75','0.7')   # Robot 4
+    # ]   
+
+     poses = [
         ('0.35','-0.3'),  # Robot 1
         ('-0.7','-0.5'),  # Robot 2
-        ('-0.4','0.7'),  # Robot 3
         ('0.75','0.7')   # Robot 4
-    ]   
+    ]  
 
     # Loop to spawn each robot
     for i, (x, y) in enumerate(poses, start=1):
