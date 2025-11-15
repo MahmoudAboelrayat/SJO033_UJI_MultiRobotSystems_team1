@@ -19,15 +19,25 @@ def launch_setup(context, *args, **kwargs):
         'localization_launch.py'
     )
 
-    sim_robot_ids = ['robot1', 'robot2', 'robot3', 'robot4']
+    # sim_robot_ids = ['robot1', 'robot2', 'robot3', 'robot4']
+    sim_robot_ids = ['robot1', 'robot2', 'robot3']
+
     robot_ids = sim_robot_ids
 
+    # initial_poses = [
+    #     (0.35, -0.3, 0.0),
+    #     (-0.7, -0.5, 0.0),
+    #     (-0.4, 0.7, 0.0),
+    #     (0.75, 0.7, 0.0),
+    # ]
+
+     # For 3 robots in rooms 1,2,4, skip room 3
     initial_poses = [
         (0.35, -0.3, 0.0),
         (-0.7, -0.5, 0.0),
-        (-0.4, 0.7, 0.0),
         (0.75, 0.7, 0.0),
     ]
+    
 
     nodes = []
 
