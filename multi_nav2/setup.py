@@ -17,6 +17,7 @@ setup(
         # Install launch, map, and param directories
         (os.path.join('share', package_name, 'launch'), glob('launch/*.py')),
         (os.path.join('share', package_name, 'map'), glob('map/*')),
+         (os.path.join('share', package_name, 'rviz'), glob('rviz/*')),
         (os.path.join('share', package_name, 'param'), glob('param/**/*', recursive=True)),
     ],
     install_requires=['setuptools'],

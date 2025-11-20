@@ -51,8 +51,8 @@ def generate_launch_description():
     # https://github.com/ros/robot_state_publisher/pull/30
     # TODO(orduno) Substitute with `PushNodeRemapping`
     #              https://github.com/ros2/launch_ros/issues/56
-    remappings = [('/tf', 'tf'),
-                  ('/tf_static', 'tf_static')]
+    # remappings = [('/tf', 'tf'),
+    #               ('/tf_static', 'tf_static')]
 
     # Create our own temporary YAML files that include substitutions
     param_substitutions = {
@@ -65,7 +65,7 @@ def generate_launch_description():
     # User defined config file should contain '<robot_namespace>' keyword for the replacements.
     params_file = ReplaceString(
         source_file=params_file,
-        replacements={'<robot_namespace>': ('/', namespace)},
+        replacements={'<robot_namespace>': (namespace)},
         condition=IfCondition(use_namespace))
 
     configured_params = ParameterFile(
@@ -137,7 +137,7 @@ def generate_launch_description():
             executable='component_container_isolated',
             parameters=[configured_params, {'autostart': autostart}],
             arguments=['--ros-args', '--log-level', log_level],
-            remappings=remappings,
+            # remappings=remappings,
             output='screen'),
 
         IncludeLaunchDescription(

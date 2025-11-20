@@ -16,12 +16,13 @@ def generate_launch_description():
     map_file = LaunchConfiguration('map')
     params_file = LaunchConfiguration('params_file')
     autostart = LaunchConfiguration('autostart')
+    map_serv = LaunchConfiguration('map_server')
 
     multi_nav2_share = get_package_share_directory('multi_nav2')
-    nav2_bringup_share = get_package_share_directory('nav2_bringup')
+    nav2_bringup_share = get_package_share_directory('multi_nav2')
     nav_launch_dir = os.path.join(nav2_bringup_share, 'launch')
     default_map = os.path.join(multi_nav2_share, 'map', 'my_map4.yaml')
-    default_params = os.path.join(multi_nav2_share, 'param', 'nav2_params.yaml')
+    default_params = os.path.join(multi_nav2_share, 'param', 'nav2_params multi.yaml')
 
     rviz_config_file =os.path.join(
             nav2_bringup_share, 'rviz', 'nav2_namespaced_view.rviz')
@@ -33,6 +34,7 @@ def generate_launch_description():
         DeclareLaunchArgument('map', default_value=default_map, description='Full path to map yaml file'),
         DeclareLaunchArgument('params_file', default_value=default_params, description='Full path to Nav2 parameter file'),
         DeclareLaunchArgument('autostart', default_value='True', description='Automatically start Nav2 nodes'),
+        DeclareLaunchArgument('map_server', default_value='True', description='Enable map server'),
 
 
         IncludeLaunchDescription(
@@ -45,7 +47,8 @@ def generate_launch_description():
                 'use_sim_time': use_sim_time,
                 'autostart': autostart,
                 'map': map_file,
-                'params_file': params_file
+                'params_file': params_file,
+                'map_server': map_serv
             }.items(),
         ),
          IncludeLaunchDescription(
