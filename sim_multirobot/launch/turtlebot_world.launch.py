@@ -31,7 +31,7 @@ def generate_launch_description():
     world = os.path.join(
         pkg_share,
         'worlds',
-        'multirobot_world'
+        'multirobot_world.world'
     )
 
     gzserver_cmd = IncludeLaunchDescription(
@@ -77,7 +77,7 @@ def generate_launch_description():
             'ros2', 'run', 'gazebo_ros', 'spawn_entity.py',
             '-entity', 'turtlebot3_burger',
             '-database', 'turtlebot3_burger',
-            '-x', '0.0', '-y', '0.2', '-Y', str(math.radians(0))
+            '-x', '0.0', '-y', '0.2', '-Y', str(math.radians(180))
         ],
         output='screen'
     )
